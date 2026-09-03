@@ -1,7 +1,7 @@
 Getting Started: Diamonds
 ================
 Hong Zhang
-2020-09-03
+2026-09-03
 
 - [Grading Rubric](#grading-rubric)
   - [Individual](#individual)
