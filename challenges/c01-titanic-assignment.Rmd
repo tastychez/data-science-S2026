@@ -1,7 +1,7 @@
 ---
 title: "RMS Titanic"
-author: "(Your name here)"
-date: 2020-
+author: "Hong Yi Zhang"
+date: 2026-09-09
 output:
   github_document:
     toc: true
@@ -51,12 +51,21 @@ df_titanic <- as_tibble(Titanic)
 ### __q1__ Perform a glimpse of `df_titanic`. What variables are in this dataset?
 
 ```{r q1-task}
-## TASK: Perform a `glimpse` of df_titanic
+df_titanic %>% 
+  glimpse()
 ```
 
 **Observations**:
 
-- (List all variables here)
+- Class (1st, 2nd, 3rd, Crew)
+
+- Sex (Male, Female)
+
+- Age (Child, Adult)
+
+- Survived (No, Yes)
+
+- n (The count of people in that specific group)
 
 ### __q2__ Skim the [Wikipedia article](https://en.wikipedia.org/wiki/RMS_Titanic) on the RMS Titanic, and look for a total count of souls aboard. Compare against the total computed below. Are there any differences? Are those differences large or small? What might account for those differences?
 
@@ -68,12 +77,14 @@ df_titanic %>% summarize(total = sum(n))
 
 **Observations**:
 
-- Write your observations here
 - Are there any differences?
-  - (Your response here)
+  - Yes. The df_titanic data counts 2201 total people. Wikipedia states there were 2,208 people on board. That is a difference of 7 people. 
 - If yes, what might account for those differences?
-  - (Your response here)
-  - ...
+  - Historical records from 1912 were messy. Some possible explanations were that people traveled under false names, canceled at the last minute but were left on the manifest, or were undocumented stowaways/crew members. 
+  - The difference is small overall. 7 people out of 2,201 is about 0.3%, which is not enough to change the ship-wide survival rate. 
+  - Revisiting this after q5: whether those 7 matter depends on which groups they fall into and this summary alone does not tell us. Group sizes are very uneven, from 862 adult crewmen down to a single first class girl. One more crewman barely moves that group's survival rate but one more first class girl who died would take that group's survival rate from 100% to 50%. The missing 7 are harmless for the big comparisons but could matter for smaller groups.
+  - Different figures come from the British and American inquiries and later historians revised them so no single "correct" count exists. The Wikipedia article itself says estimates vary, so 2,208 isn't a confirmed number either.
+
 
 ### __q3__ Create a plot showing the count of persons who *did* survive, along with aesthetics for `Class` and `Sex`. Document your observations below.
 
@@ -81,11 +92,19 @@ df_titanic %>% summarize(total = sum(n))
 
 ```{r q3-task}
 ## TASK: Visualize counts against `Class` and `Sex`
+df_titanic %>%
+  filter(Survived == "Yes") %>%
+  ggplot(aes(x = Class, y = n, fill = Sex)) +
+  geom_col()
 ```
 
 **Observations**:
 
-- Write your observations here
+- Crew males were the largest single group of survivors by count, at roughly 190. Their segment alone is taller than the entire 2nd class bar and slightly taller than the 3rd class bar.
+
+- In 1st and 2nd class, female survivors clearly outnumbered male survivors. In 3rd class the two are close to even, and among crew the pattern reverses sharply, with males making up the large majority.
+
+- These are raw counts, so they confound survival with group size. A tall bar does not by itself mean a high survival rate.
 
 # Deeper Look
 <!-- -------------------------------------------------- -->
@@ -111,26 +130,53 @@ df_prop
 ### __q4__ Replicate your visual from q3, but display `Prop` in place of `n`. Document your observations, and note any new/different observations you make in comparison with q3. Is there anything *fishy* in your plot?
 
 ```{r q4-task}
+df_prop %>%
+  filter(Survived == "Yes") %>%
+  ggplot(aes(x = Class, y = Prop, fill = Sex)) +
+  geom_col()
 ```
 
 **Observations**:
 
-- Write your observations here.
+- Switching from counts to proportions changes the story from q3. Crew had the tallest bar in q3 but has the shortest bar here, so a large number of survivors does not correspond to a large proportion surviving.
+- In all four classes, the female portion of the bar is taller than the male portion, which suggests females survived at higher proportions.
+
 - Is there anything *fishy* going on in your plot?
-  - (Your response here)
+  - Yes, the y-axis goes above 3.0, but a proportion cannot exceed 1.0. It looks like each passenger class bar stacks four separate group proportions on top of each other (male child, male adult, female child, female adult) and adding proportions together does not produce a meaningful number. The Crew bar stacks only two because its child rows are dropped for the reason below.
+  - The plot also prints Removed 2 rows containing missing values. Those are the crew children, where Total is 0, so Prop is 0 / 0. There were no children in the crew.
 
 ### __q5__ Create a plot showing the group-proportion of occupants who *did* survive, along with aesthetics for `Class`, `Sex`, *and* `Age`. Document your observations below.
 
 *Hint*: Don't forget that you can use `facet_grid` to help consider additional variables!
 
 ```{r q5-task}
+df_prop %>%
+  filter(Survived == "Yes") %>%
+  ggplot(aes(x = Class, y = Prop, fill = Sex)) +
+  geom_col(position = "dodge") +
+  facet_grid(~ Age)
+```
+
+```{r q5-group-sizes}
+df_prop %>%
+  filter(Survived == "Yes", Prop == 1) %>%
+  select(Class, Sex, Age, n, Total)
 ```
 
 **Observations**:
 
-- (Write your observations here.)
+- In the Adult panel, the female bar is taller than the male bar in all four classes. The gap is largest in 2nd class, where the female bar is near the top of the axis and the male bar is barely off the floor.
+- Among adult females, 1st class is close to 100%, 2nd class and Crew sit at a similar height around 85%, and 3rd class drops to just under half.
+- Adult male survival does not simply decline with class. 2nd class males did worse than 3rd class males, which is the opposite of what the class ordering would suggest.
+- In the Child panel, the 1st and 2nd class bars reach the top of the axis for both sexes, meaning every child in those classes survived. 3rd class children did far worse, with the girls just under half and the boys just over a quarter.
+- The Crew position in the Child panel is empty, and the plot prints the same "Removed 2 rows" warning as q4. There were no children in the crew, so Total is 0 and Prop is undefined.
+
 - If you saw something *fishy* in q4 above, use your new plot to explain the fishy-ness.
-  - (Your response here)
+  - Faceting by age fixes the fishy-ness. In q4, the child and adult rows were being stacked into one bar, which is what pushed the proportion past 1.0. Now each bar is a single group and no bar rises above the top of the axis.
+
+  - The stacking is the reason for the fishy-ness. The 3rd class bar in q4 reached about 1.35 and this plot shows none of its four groups is at 1.0. The 1st and 2nd class bars in q4 went much higher, to about 3.3 and 2.9, because in both of those classes the two child bars sit at the top of the axis here, adding 2.0 before either adult rate is counted.
+  
+  - It's important to take caution when looking at the full bars. The table above shows those groups are tiny: 1 girl and 5 boys in 1st class, 13 girls and 11 boys in 2nd class. A 100% survival rate from 1 passenger is exactly as tall as a 100% survival rate calculated from 13, even though the two have a large discrepancy in the raw counts behind them.
 
 # Notes
 <!-- -------------------------------------------------- -->
