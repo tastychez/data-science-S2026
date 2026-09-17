@@ -1,7 +1,7 @@
 ---
 title: "Michelson Speed-of-light Measurements"
-author: "(Your name here)"
-date: 2020-
+author: "Hong Zhang"
+date: 2026-09-14
 output: 
   github_document:
     toc: true
@@ -85,18 +85,30 @@ df_michelson %>% glimpse()
 
 ```{r q1-task}
 ## TODO: Compute summaries
-df_q1 <- NA
+df_q1 <- 
+  df_michelson %>%
+  group_by(Distinctness) %>%
+  summarize(
+    n = n(),
+    MeanVelocity = mean(Velocity)
+  )
+
 df_q1 %>%
   arrange(desc(Distinctness)) %>%
   knitr::kable()
 ```
 
 **Observations**:
-- Write your observations here!
-  - (Your response here)
-- Why might your table differ from Michelson's?
-  - (Your response here)
 
+- Our counts match Michelson's exactly (46, 39, 15), but our mean velocity for each distinctness is slightly off.
+
+- Our mean for distinctness 3 is 1.7 km/s higher than his, distinctness 2 is 1.5 km/s lower, and distinctness 1 is 2 km/s lower.
+
+- Distinctness 3 and 2 have nearly identical means around 299860. Distinctness 1 is about 50 km/s lower, but it has only 15 observations, so that mean is less concrete than the other two.
+  
+- Why might your table differ from Michelson's?
+  - All three of Michelson's means end in 0. A mean of dozens of values is unlikely to land exactly on a multiple of 10 by chance, so his numbers were most likely rounded to the nearest 10 km/s. If we rounded the mean velocities we got from the summary, we would get his values exactly. Every raw Velocity value in the dataset is also a multiple of 10.
+  
 The `Velocity` values in the dataset are the speed of light *in air*; Michelson
 introduced a couple of adjustments to estimate the speed of light in a vacuum.
 In total, he added $+92$ km/s to his mean estimate for `VelocityVacuum` (from
@@ -108,7 +120,9 @@ observations in the dataset.
 
 ```{r q2-task}
 ## TODO: Adjust the data, assign to df_q2
-df_q2 <- NA
+df_q2 <- 
+  df_michelson %>%
+  mutate(VelocityVacuum = Velocity + 92)
 
 df_q2
 ```
@@ -137,13 +151,21 @@ problems uncertainty includes some amount of human judgment.[2]
 ```{r q3-task}
 ## TODO: Compare Michelson's estimate and error against the true value
 ## Your code here!
+df_q3 <-
+  tibble(
+    error = LIGHTSPEED_VACUUM - LIGHTSPEED_MICHELSON,
+    uncertainty = LIGHTSPEED_PM
+  )
+
+df_q3
 ```
 
 **Observations**:
+
 - Is Michelson's estimate of the error (his uncertainty) greater or less than the true error?
-  - (Your response here)
+  - Less than the true error. The true error is about −152 km/s, meaning his estimate was too high by 152. His stated uncertainty was only + or -51.
 - Make a quantitative comparison between Michelson's uncertainty and his error.
-  - (Your response here)
+  - The true error is about 3 times larger than his uncertainty (152 vs 51). The modern value, 299792 km/s, sits well outside his range of 299893 km/s to 299995 km/s.
 
 The following plot shows all of Michelson's data as a [control chart](https://en.wikipedia.org/wiki/Control_chart); this sort of plot is common in manufacturing, where it is used to help determine if a manufacturing process is under [statistical control](https://en.wikipedia.org/wiki/Statistical_process_control). Each dot is one of Michelson's measurements, and the grey line connects the mean taken for each day. The same plot also shows simulated data using a probability model. We'll get into statistics later in the course; for now, let's focus on understanding what real and simulated data tend to look like.
 
@@ -207,18 +229,49 @@ df_q2 %>%
 ```
 
 **Observations**:
+
 Similarities
-- (your responses here)
+
+- Both panels are centered on the dotted line at Michelson's estimate. This is by construction, since the simulated data uses the real data's mean and standard deviation.
+- The spread of the individual points is about the same in both panels. Roughly half the points in each panel fall outside the +/- 51 band.
+- In both panels, the grey daily mean line crosses in and out of the band rather than staying inside it.
+
 Differences
-- (your responses here)
+
+- There is a difference in where the big swings of the daily mean line happen. In the Real panel, the three daily means that sit above the upper band line and the one that sits far below the lower band line all occur before Jun 16. After Jun 16, no real daily mean rises above the band again. In the Simulated panel, the only two daily means above the band are late, after Jun 23, and nothing before Jun 23 leaves the band at all.
+- There is a difference in the size of the swings of the daily mean line. The real line has one jump of about 200 km/s between consecutive days, from below the band to above it, around Jun 12. The simulated line never jumps that far between neighboring days.
+- There is a difference in the extreme individual points. The highest single point (above 300150) and the lowest single point (near 299710) are both in the Real panel. The simulated points stay within roughly 299760 to 300090.
 
 ### __q5__ You have access to a few other variables. Construct a **at least three** visualizations of `VelocityVacuum` against these other factors. Are there other patterns in the data that might help explain the difference between Michelson's estimate and `LIGHTSPEED_VACUUM`?
 
+```{r q5-temp}
+## velocity vs temperature
+df_q2 %>%
+  ggplot(aes(Temp, VelocityVacuum)) +
+  geom_point()
+```
+
+```{r q5-distinctness}
+## velocity by image distinctness
+df_q2 %>%
+  ggplot(aes(Distinctness, VelocityVacuum)) +
+  geom_boxplot()
+```
+
+```{r q5-date}
+## velocity over time, colored by distinctness
+df_q2 %>%
+  ggplot(aes(Date, VelocityVacuum, color = Distinctness)) +
+  geom_point()
+```
+
 **Observations**:
 
-- Make sure to record observations on your graphs!
-
-
+- All three plots share the same overall pattern. Almost every measurement is above the true value of 299792 km/s. Only 2 of the 100 points fall below the 299800 gridline. No temperature, distinctness, or date is centered anywhere near the true value, so the 152 km/s error is present in every measurement regardless of these conditions.
+- In the temperature plot, there is no strong trend. Points at every temperature spread across roughly the same range, from about 299850 to 300000. The coldest measurements (58 to 67 F) have just one point reaching 300000 while the warmest (85 to 90 F) have several above it, so velocity may be slightly higher on warmer days, but the overlap between temperatures is large. Even the coldest measurements are over 100 km/s above the true value.
+- In the distinctness boxplot, the medians step up slightly from about 299920 for distinctness 1 to 299940 for 2 and 299955 for 3, so clearer images gave slightly higher velocities and ended up farther from the true value. The three boxes overlap heavily and distinctness 1 has only 15 points, so the difference between groups is small and could be noise.
+- In the date plot, the measurements before Jun 16 include more points above 300000 than the measurements after. The distinctness 1 points (red) only appear on a few dates in the middle of June, so the lower median for distinctness 1 in the boxplot could be because of those particular days rather than image quality. The data cannot separate the two.
+- Since the error does not depend on temperature, distinctness, or date, it most likely comes from something that was the same for every measurement, such as the measured distance between the mirrors. If that distance was slightly off, every velocity would come out too high by the same amount. Checking this would require Michelson's recorded value for that distance and how precisely he measured it, which are not in this dataset.
 
 ## Bibliography
 
