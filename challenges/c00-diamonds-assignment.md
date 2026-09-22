@@ -103,15 +103,30 @@ diamonds %>%
 
 ![](c00-diamonds-assignment_files/figure-gfm/q1-task-1.png)<!-- -->
 
+``` r
+diamonds %>%
+  ggplot(aes(x = carat, y = price)) +
+  geom_point() +
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+![](c00-diamonds-assignment_files/figure-gfm/q1-loglog-1.png)<!-- -->
+
 **Observations**:
 
 There is a strong, positive relationship: as carat increases, price
-generally increases. The relationship curves upward, suggesting that
-price increases exponentially, not just linearly, as the diamond gets
-larger. The variance of the data gets much wider as carat increases. For
-small diamonds, the prices are all clustered together. For diamonds
-larger than ~2.5 carats, the price can be anywhere from \$6,000 to over
-\$18,000.
+generally increases. On the original plot the relationship curves
+upward, so price grows faster than linearly with carat. Plotting both
+axes on a log scale turns the points into a straight line, which means
+the relationship is a power law rather than an exponential. The line is
+steeper than 45 degrees, so multiplying carat by some factor multiplies
+price by a larger factor. For example, going from 0.3 to 1.0 carat,
+about a 3x increase, raises the typical price from around 600 to around
+4000, closer to a 7x increase. The variance of the data also gets much
+wider as carat increases. For small diamonds, the prices are all
+clustered together. For diamonds larger than ~2.5 carats, the price can
+be anywhere from \$6,000 to over \$18,000.
 
 ### **q2** Create a visualization showing variables `carat`, `price`, and `cut` simultaneously. Experiment with which variable you assign to which aesthetic (`x`, `y`, etc.) to find an effective visual.
 
