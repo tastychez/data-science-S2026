@@ -1,7 +1,7 @@
 ---
 title: "Aluminum Data"
-author: "(Your name here)"
-date: 2020-
+author: Hong Zhang
+date: 2026-09-24
 output:
   github_document:
     toc: true
@@ -67,7 +67,14 @@ Note that these data are not tidy! The data in this form are convenient for repo
 ```{r q1-task}
 ## TASK: Tidy `df_stang`
 df_stang_long <-
-  df_stang
+  df_stang %>%
+  pivot_longer(
+    names_to = c(".value", "angle"),
+    names_sep = "_",
+    cols = c(-thick, -alloy)
+  ) %>%
+  mutate(angle = as.integer(angle)) %>%
+  filter(E > 0, nu > 0)
 
 df_stang_long
 ```
@@ -102,20 +109,38 @@ print("Very good!")
 ### __q2__ Perform a basic EDA on the aluminum data *without visualization*. Use your analysis to answer the questions under *observations* below. In addition, add your own *specific* question that you'd like to answer about the data---you'll answer it below in q3.
 
 ```{r q2-task}
-##
+df_stang_long %>%
+  summary()
+
+df_stang_long %>%
+  count(alloy)
+
+df_stang_long %>%
+  count(angle)
+
+df_stang_long %>%
+  count(thick)
+
+# number of plates at each thickness (each row of the raw data is one plate)
+df_stang %>%
+  count(thick)
+
+# repeated tests under the same conditions
+df_stang_long %>%
+  filter(thick == 0.022, angle == 45)
 ```
 
 **Observations**:
 
 - Is there "one true value" for the material properties of Aluminum?
-  - (Your response here)
+  - No, there is not one true value for the material properties of aluminum. Even for a single alloy, the summary shows E ranges from 9900 to 10700 and nu ranges from 0.310 to 0.331 across the 26 measurements. Repeated tests under the same conditions also disagree. Filtering to the 0.022 thick plates tested at 45 degrees gives two measurements with E values of 10700 and 10500.
 - How many aluminum alloys are in this dataset? How do you know?
-  - (Your response here)
+  - There is one aluminum alloy in this dataset, al_24st. count(alloy) returns a single row containing all 26 measurements.
 - What angles were tested?
-  - (Your response here)
+  - The angles tested were 0, 45, and 90 degrees. There are 9 measurements at 0 degrees, 8 at 45 degrees, and 9 at 90 degrees. The 45 degree group has one fewer because the last row of the raw df_stang table has -1 for E_45 and nu_45, which was removed as invalid in q1.
 - What thicknesses were tested?
-  - (Your response here)
-- (Write your own question here)
+  - The thicknesses tested were 0.022, 0.032, 0.064, and 0.081. There are 6 measurements each at 0.022, 0.032, and 0.064, and 8 measurements at 0.081. Counting the rows of the raw df_stang table shows that 3 plates were tested at 0.081 and 2 plates at each other thickness, which is why 0.081 has more measurements.
+- Does the angle relative to the rolling direction affect the elasticity E? (own question)
 
 ## Visualize
 <!-- ------------------------- -->
@@ -123,12 +148,18 @@ print("Very good!")
 ### __q3__ Create a visualization to investigate your question from q2 above. Can you find an answer to your question using the dataset? Would you need additional information to answer your question?
 
 ```{r q3-task}
-## TASK: Investigate your question from q1 here
+df_stang_long %>%
+  ggplot(aes(angle, E)) +
+  geom_point(size = 3) +
+  facet_wrap(~ thick)
 ```
 
 **Observations**:
 
-- (Address your question from q1 here)
+- Based on this data, angle does not appear to have a consistent effect on E. In the 0.022 panel, every measurement at every angle falls between 10500 and 10700. In the 0.064 and 0.081 panels, the 0 degree points are slightly higher than the points at the other angles, but in the 0.032 panel the 45 degree points are highest instead. No angle is highest across all four thicknesses.
+- Where the points at one angle are higher, the difference is 200 or less, which is no bigger than the difference between two plates tested at the same angle. For example, the two 0.022 plates tested at 45 degrees gave 10500 and 10700. Any effect of angle is too small to separate from the plate to plate variation in this data.
+- This answer is not conclusive. There are only two or three measurements for each thickness and angle, and every E value is recorded to the nearest 100, so an effect smaller than about 100 could not be detected. Answering the question would require more plates tested at each thickness and angle, with E recorded more precisely than the nearest 100.
+- Some panels show fewer dots than measurements because identical values overlap exactly. For example, the two 0.022 plates at 0 degrees both measured 10600.
 
 ### __q4__ Consider the following statement:
 
@@ -148,9 +179,10 @@ df_stang_long %>%
 **Observations**:
 
 - Does this graph support or contradict the claim above?
-  - (Your response here)
+  - The graph partly contradicts the claim that E is an intensive property. The 0.081 thick plates all have E between 9900 and 10100, while every plate at the other three thicknesses has E of 10300 or higher. If E did not depend on the amount of material, we would not expect the points for the thickest plates to be clearly separate from the rest. However, E shows no trend across the other three thicknesses. The 0.022, 0.032, and 0.064 plates overlap between 10300 and 10700, and the 0.064 plates tend to have higher E than the thinner 0.032 plates. For those three thicknesses, E looks about the same regardless of thickness, which supports the claim.
+
 - Is this evidence *conclusive* one way or another?
-  - (Your response here)
+  - No, this evidence is not conclusive. The difference comes from a single thickness, 0.081, rather than a steady change across all thicknesses. The lower E could be caused by thickness or by something about those specific plates, such as coming from a different batch of material. There are also only two or three plates at each thickness, all of the same alloy. To decide, we would need plates at more thicknesses, especially between 0.064 and 0.081 and above 0.081, to see whether E keeps dropping as thickness increases. We would also need 0.081 thick plates from more than one batch of material to see whether the low E comes from the thickness or from those particular plates.
 
 # References
 <!-- -------------------------------------------------- -->
