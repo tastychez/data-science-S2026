@@ -74,10 +74,16 @@ df_stang_long <-
     cols = c(-thick, -alloy)
   ) %>%
   mutate(angle = as.integer(angle)) %>%
-  filter(E > 0, nu > 0)
+  filter(E > 0) # changed this from "filter(E > 0, nu > 0)" as part of revision
 
 df_stang_long
 ```
+
+**Comments for revision**:
+
+- The last row of the raw data has -1 for both E_45 and nu_45. Since both values in that row are -1, it is most likely a placeholder for a missing measurement.
+- E measures how stiff a plate is so it has to be positive. An E of 0 would mean the plate has no stiffness at all and a negative E is impossible so any E of 0 or below is invalid and is removed by filter(E > 0).
+- I changed the filter from filter(E > 0, nu > 0) to filter(E > 0) because Poisson's ratio can be 0 or even negative for some materials so a low nu would be uncommon but still possible. Filtering on nu would have treated a nu of 0 as invalid. The only nu at or below 0 in this data is the -1 in the row that the E filter already removes so the result is still the same 26 rows.
 
 Use the following tests to check your work.
 
