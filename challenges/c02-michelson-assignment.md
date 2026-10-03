@@ -410,15 +410,15 @@ df_q2 %>%
 - All three plots share the same overall pattern. Almost every
   measurement is above the true value of 299792 km/s. Only 2 of the 100
   points fall below the 299800 gridline. No temperature, distinctness,
-  or date is centered anywhere near the true value, so the 152 km/s
-  error is present in every measurement regardless of these conditions.
-- In the temperature plot, there is no strong trend. Points at every
-  temperature spread across roughly the same range, from about 299850
-  to 300000. The coldest measurements (58 to 67 F) have just one point
-  reaching 300000 while the warmest (85 to 90 F) have several above it,
-  so velocity may be slightly higher on warmer days, but the overlap
-  between temperatures is large. Even the coldest measurements are over
-  100 km/s above the true value.
+  or date is centered anywhere near the true value, so the measurements
+  are high under every one of these conditions.
+- In the temperature plot, there is no strong trend and the points at
+  different temperatures overlap heavily. The warmest days (85 to 90 F)
+  have several points above 300000, while the coolest days (58 to 67 F)
+  have only one point reaching 300000, and the points at 58 and 59 F are
+  near the bottom of the plot, around 299800 and 299700. This suggests
+  velocity may be slightly higher on warmer days, but it relies on a
+  handful of points and most temperatures cover the same range.
 - In the distinctness boxplot, the medians step up slightly from about
   299920 for distinctness 1 to 299940 for 2 and 299955 for 3, so clearer
   images gave slightly higher velocities and ended up farther from the
@@ -431,13 +431,25 @@ df_q2 %>%
   median for distinctness 1 in the boxplot could be because of those
   particular days rather than image quality. The data cannot separate
   the two.
-- Since the error does not depend on temperature, distinctness, or date,
+- Since the error shows up at every temperature, distinctness, and date,
   it most likely comes from something that was the same for every
   measurement, such as the measured distance between the mirrors. If
-  that distance was slightly off, every velocity would come out too high
-  by the same amount. Checking this would require Michelson’s recorded
+  that distance was measured slightly too long, every velocity would
+  come out too high. Checking this would require Michelson’s recorded
   value for that distance and how precisely he measured it, which are
   not in this dataset.
+
+**Comments for revision**:
+
+- Are there other patterns in the data that might help explain the
+  difference between Michelson’s estimate and LIGHTSPEED_VACUUM?
+  - No, this data does not show any definitive trend that explains the
+    difference. Temperature, distinctness, and date each show at most a
+    slight pattern and in every plot the points from different groups
+    overlap heavily. Even the groups with the lowest velocities, such as
+    the distinctness 1 images with a median of about 299920, are still
+    more than 100 km/s above the true value of 299792. Patterns this
+    weak cannot account for an error of about 152 km/s.
 
 ## Bibliography
 
