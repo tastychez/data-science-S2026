@@ -1,7 +1,7 @@
 ---
 title: "COVID-19"
-author: "(Your name here)"
-date: 2020-
+author: "Hong Zhang"
+date: 2026-10-14
 output:
   github_document:
     toc: true
@@ -37,7 +37,6 @@ Make sure to commit both the challenge report (`report.md` file) and supporting 
 
 ```{r setup}
 library(tidyverse)
-
 ```
 
 *Background*: [COVID-19](https://en.wikipedia.org/wiki/Coronavirus_disease_2019) is the disease caused by the virus SARS-CoV-2. In 2020 it became a global pandemic, leading to huge loss of life and tremendous disruption to society. The New York Times (as of writing) publishes up-to-date data on the progression of the pandemic across the United States---we will study these data in this challenge.
@@ -79,7 +78,16 @@ That's the high-level view; now let's dig into the details.
 
 ```{r q1-task}
 ## TASK: Load the census bureau data with the following tibble name.
-df_pop <- NA
+# skip the row of census codes so the second row becomes the column names
+# the file also has an empty last column so select() keeps only the four needed
+df_pop <-
+  read_csv("./data/ACSDT5Y2018.B01003-Data.csv", skip = 1) %>%
+  select(
+    id = Geography,
+    `Geographic Area Name`,
+    `Estimate!!Total`,
+    `Margin of Error!!Total`
+  )
 ```
 
 *Note*: You can find information on 1-year, 3-year, and 5-year estimates [here](https://www.census.gov/programs-surveys/acs/guidance/estimates.html). The punchline is that 5-year estimates are more reliable but less current.
@@ -95,7 +103,8 @@ The New York Times is publishing up-to-date data on COVID-19 on [GitHub](https:/
 
 ```{r q2-task}
 ## TASK: Find the URL for the NYT covid-19 county-level data
-url_counties <- NA_character_
+url_counties <-
+  "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"
 ```
 
 Once you have the url, the following code will download a local copy of the data, then load the data into R.
@@ -136,7 +145,10 @@ To join these datasets, we'll need to use [FIPS county codes](https://en.wikiped
 
 ```{r q3-task}
 ## TASK: Create a `fips` column by extracting the county code
-df_q3 <- NA
+# the fips code is everything after "US" in the id
+df_q3 <-
+  df_pop %>%
+  mutate(fips = str_remove(id, ".*US"))
 ```
 
 Use the following test to check your answer.
@@ -156,7 +168,10 @@ print("Very good!")
 
 ```{r q4-task}
 ## TASK: Join df_covid and df_q3 by fips.
-df_q4 <- NA
+# left_join keeps every row of df_covid even if it has no population match
+df_q4 <-
+  df_covid %>%
+  left_join(df_q3, by = "fips")
 ```
 
 Use the following test to check your answer.
@@ -220,7 +235,11 @@ Now that we've done the hard work of loading and wrangling the data, we can fina
 ```{r q5-task}
 ## TASK: Normalize cases and deaths
 df_normalized <-
-  df_data
+  df_data %>%
+  mutate(
+    cases_per100k = cases / population * 100000,
+    deaths_per100k = deaths / population * 100000
+  )
 ```
 
 You may use the following test to check your work.
@@ -289,12 +308,37 @@ Compute the mean and standard deviation for `cases_per100k` and `deaths_per100k`
 
 ```{r q6-task}
 ## TASK: Compute mean and sd for cases_per100k and deaths_per100k
+# last date in the data
+df_normalized %>%
+  pull(date) %>%
+  max()
+
+# keep only the last date since the counts are cumulative
+df_latest <-
+  df_normalized %>%
+  filter(
+    date == max(date),
+    !is.na(population)
+  )
+
+df_latest %>%
+  summarize(
+    n_cases = n(),
+    cases_mean = mean(cases_per100k),
+    cases_sd = sd(cases_per100k),
+    n_deaths = sum(!is.na(deaths_per100k)),
+    deaths_mean = mean(deaths_per100k, na.rm = TRUE),
+    deaths_sd = sd(deaths_per100k, na.rm = TRUE)
+  )
 ```
 
 - Which rows did you pick?
-  - (Your response here)
+  - I picked only the rows from 2022-05-13, which is the last date in the data (printed at the top of the q6 chunk). I also dropped rows with no population estimate. That leaves 3211 counties for cases and 3133 for deaths, shown in the n_cases and n_deaths columns of the summary table.
 - Why?
-  - (Your response here)
+  - The NYT GitHub page says each row is the cumulative number of cases and deaths up to that date. A county's row on the last date already includes all of its earlier cases and deaths. Using every date would count each county once for every day it shows up and would pull the means down with early dates when the counts were close to zero.
+  - Rows without a population estimate have NA for cases_per100k and deaths_per100k. These can't go into a mean or sd. The geographic exceptions note below says New York City is one of these because it has no fips code.
+  - There are 78 counties with a population estimate but no death count (3211 minus 3133). I used `na.rm = TRUE` to leave them out of the deaths mean and sd only.
+  - Each county counts once no matter how many people live there. These means describe a typical county and not the rate for the whole country.
 
 ### __q7__ Find and compare the top 10
 
@@ -302,15 +346,46 @@ Find the top 10 counties in terms of `cases_per100k`, and the top 10 in terms of
 
 ```{r q7-task}
 ## TASK: Find the top 10 max cases_per100k counties; report populations as well
+# keep each county's highest value and the first date it reached it
+df_top_cases <-
+  df_normalized %>%
+  filter(!is.na(cases_per100k)) %>%
+  group_by(county, state) %>%
+  filter(cases_per100k == max(cases_per100k)) %>%
+  filter(date == min(date)) %>%
+  ungroup() %>%
+  arrange(desc(cases_per100k)) %>%
+  select(date, county, state, population, cases, cases_per100k) %>%
+  head(10)
+
+df_top_cases
 
 ## TASK: Find the top 10 deaths_per100k counties; report populations as well
+df_top_deaths <-
+  df_normalized %>%
+  filter(!is.na(deaths_per100k)) %>%
+  group_by(county, state) %>%
+  filter(deaths_per100k == max(deaths_per100k)) %>%
+  filter(date == min(date)) %>%
+  ungroup() %>%
+  arrange(desc(deaths_per100k)) %>%
+  select(date, county, state, population, deaths, deaths_per100k) %>%
+  head(10)
+
+df_top_deaths
 ```
 
 **Observations**:
 
-- (Note your observations here!)
+- Loving County, Texas has the highest cases per 100,000 at 192,157. This is about 7.8 times the q6 mean of 24,774. The other nine counties in the cases table are between 49,817 and 69,527, which is about 2 to 2.8 times the mean.
+- Loving County has 196 cases but a population estimate of only 102 people. That is more cases than people. This could happen if the census estimate is too low or if some people were counted as cases more than once. The data here can't show what caused it. I would not treat Loving County's value as a real rate.
+- The top 10 counties for deaths are between 946 and 1,360 deaths per 100,000. These are about 2.5 to 3.6 times the q6 mean of 375.
+- Every county in both tables has fewer than 20,000 people. The largest one is Bethel Census Area, Alaska with 18,040.
+- With so few people, a small number of cases or deaths changes the rate a lot. Loving County is 8th in the deaths table with only 1 death.
+- Loving County is the only county in both tables. Four of the top 10 counties for cases are in Alaska. Three of the top 10 for deaths are Virginia cities (Galax, Emporia and Martinsville).
 - When did these "largest values" occur?
-  - (Your response here)
+  - The date column shows the first date each county reached its highest value. All 20 counties reached it between 2022-02-03 (Robertson County, Kentucky) and 2022-05-13 (Crowley County, Colorado). The data ends on 2022-05-13. These dates are all in the last few months of the data.
+  - This fits with the counts being cumulative. They keep adding up over time, which puts each county's largest value near the end of the data.
 
 ## Self-directed EDA
 <!-- ------------------------- -->
@@ -329,6 +404,37 @@ Find the top 10 counties in terms of `cases_per100k`, and the top 10 in terms of
 
 **DO YOUR OWN ANALYSIS HERE**
 
+In q7 every county in the top 10 had fewer than 20,000 people. I wanted to see whether the most extreme rates only show up in small counties. This plot shows deaths per 100,000 against population for the 3133 counties with a death count on 2022-05-13 (n_deaths in q6). The red points are the top 10 counties for deaths from q7.
+
+```{r q8-deaths-vs-population}
+# red points are the top 10 deaths counties from q7
+df_latest %>%
+  filter(!is.na(deaths_per100k)) %>%
+  ggplot(aes(population, deaths_per100k)) +
+  geom_point(alpha = 0.3) +
+  geom_point(
+    data = . %>% semi_join(df_top_deaths, by = c("county", "state")),
+    mapping = aes(color = "Top 10 deaths per 100,000"),
+    size = 2
+  ) +
+  geom_hline(yintercept = 375, linetype = "dashed") +
+  scale_x_log10() +
+  labs(
+    x = "County population (log scale)",
+    y = "Deaths per 100,000",
+    color = "",
+    caption = "Dashed line is the q6 mean of 375 deaths per 100,000"
+  )
+```
+
+**Observations**:
+
+- The spread of the points gets smaller as population goes up. Counties left of the 1e+05 gridline go from 0 up to 1,360 deaths per 100,000 (McMullen County in the q7 table). Every county right of the 1e+05 gridline is above 0 and below the 1,000 gridline.
+- All 10 red points are left of the 1e+05 gridline. So are all of the counties with 0 deaths.
+- The red point farthest to the left is Loving County. With 102 people its 1 death puts it at 980 deaths per 100,000.
+- This suggests the extreme values in q7 are partly because those counties are so small. In McMullen County, Texas, which has 662 people, one death adds about 151 deaths per 100,000 while in a county right of the 1e+05 gridline one death adds less than 1.
+- This plot can't show why the red counties have such high rates. One possible reason is older residents, since older people were much more likely to die from COVID-19. To check this, I would need the median age of each county from the census (table B01002). That would show whether the red counties are older than the counties near the dashed line.
+
 ### Aside: Some visualization tricks
 <!-- ------------------------- -->
 
@@ -346,7 +452,10 @@ df_normalized %>%
     aes(date, cases_per100k, color = fct_reorder2(county, date, cases_per100k))
   ) +
   geom_line() +
-  scale_y_log10(labels = scales::label_number_si()) +
+  # label_number_si() was removed from scales so this uses label_number()
+  scale_y_log10(
+    labels = scales::label_number(scale_cut = scales::cut_short_scale())
+  ) +
   scale_color_discrete(name = "County") +
   theme_minimal() +
   labs(
