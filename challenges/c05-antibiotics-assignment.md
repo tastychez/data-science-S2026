@@ -157,21 +157,24 @@ is Gram positive or negative.
 
 ``` r
 # long format with one row per bacteria and antibiotic
+# bacteria sorted by median mic across the three antibiotics
 df_long <-
   df_antibiotics %>%
   pivot_longer(
     names_to = "antibiotic",
     values_to = "mic",
     cols = c(penicillin, streptomycin, neomycin)
-  )
+  ) %>%
+  mutate(bacteria = fct_reorder(bacteria, mic))
 
 # dashed line marks the 0.1 mic cutoff for treating patients
+# panels stacked vertically so the mic axis is drawn once
 df_long %>%
   ggplot(aes(mic, bacteria, color = gram)) +
   geom_point(size = 2) +
   geom_vline(xintercept = 0.1, linetype = "dashed") +
   scale_x_log10() +
-  facet_wrap(~antibiotic) +
+  facet_grid(rows = vars(antibiotic)) +
   labs(
     x = "MIC (log scale)",
     y = "Bacteria",
@@ -180,6 +183,19 @@ df_long %>%
 ```
 
 ![](c05-antibiotics-assignment_files/figure-gfm/q1.1-1.png)<!-- -->
+
+**Comments for revision**
+
+- I changed `facet_wrap(~antibiotic)` to
+  `facet_grid(rows = vars(antibiotic))` so the three panels are stacked
+  vertically. The MIC axis is now drawn once and each panel gets the
+  full width of the figure instead of a third of it. I added
+  `fig.height = 9` so the 16 bacteria names don’t overlap.
+- I added `mutate(bacteria = fct_reorder(bacteria, mic))` when making
+  `df_long` so the bacteria are sorted by their median MIC across the
+  three antibiotics instead of alphabetically. Bacteria with similar
+  overall resistance are now next to each other. Since Visual 2 uses the
+  same `df_long`, its panels are sorted the same way.
 
 #### Visual 2 (All variables)
 
@@ -194,6 +210,8 @@ your other visuals.
 ``` r
 df_long %>%
   ggplot(aes(antibiotic, mic, color = gram)) +
+  # line connects the three points so each panel shows one pattern
+  geom_line(aes(group = bacteria)) +
   geom_point(size = 2) +
   geom_hline(yintercept = 0.1, linetype = "dashed") +
   scale_y_log10() +
@@ -210,6 +228,16 @@ df_long %>%
 ```
 
 ![](c05-antibiotics-assignment_files/figure-gfm/q1.2-1.png)<!-- -->
+
+**Comments for revision**
+
+- I added `geom_line(aes(group = bacteria))` to connect the three points
+  in each panel. The shape of the line shows each bacterium’s resistance
+  pattern, which is easier to compare across panels than three loose
+  points. Because the bacteria are now sorted by median MIC, panels with
+  similar patterns end up near each other. For example the three V
+  shapes for Diplococcus pneumoniae, Streptococcus hemolyticus and
+  Streptococcus viridans are the last three panels.
 
 #### Visual 3 (Some variables)
 
@@ -372,15 +400,29 @@ opportunity to think about why this is.**
   - Visual 1
 - Why?
   - Visual 1 gives each antibiotic its own panel with the 0.1 cutoff
-    marked. Every bacterium is listed by name on the same vertical axis
-    and each point is colored by Gram stain. Reading down a panel shows
-    which bacteria a drug works on and the colors show how that lines up
-    with Gram stain. MIC is shown by position along a common log scale,
-    which is the easiest kind of comparison to read accurately. The
-    bacteria are in alphabetical order. This puts bacteria from the same
-    genus next to each other and makes genus patterns easy to spot.
-    Visual 3 shows the Gram stain split more compactly but it hides the
-    individual bacteria. It can’t show anything about genera.
+    marked. Every bacterium is listed by name in the same order in each
+    panel and each point is colored by Gram stain. Reading down a panel
+    shows which bacteria a drug works on and the colors show how that
+    lines up with Gram stain. MIC is shown by position along a common
+    log scale, which is the easiest kind of comparison to read
+    accurately. The three panels are stacked so they share one MIC axis
+    and each gets the full width of the figure. The panels go from
+    neomycin at the top to streptomycin at the bottom. That order also
+    goes from the antibiotic that reaches the cutoff for the most
+    bacteria (9) to the one that reaches it for the fewest (4). The
+    bacteria are sorted by their median MIC across the three antibiotics
+    instead of alphabetically. This puts the three bacteria that all
+    three antibiotics work on at the bottom and the three that only
+    penicillin works on at the top. All nine Gram negative bacteria are
+    in between. Visual 3 shows the Gram stain split more compactly but
+    it hides the individual bacteria. It can’t show anything about
+    genera.
+
+**Comments for revision**
+
+- I changed the explanation above because it described the alphabetical
+  order as a strength. It now describes the median MIC sorting, the
+  stacked panels and the panel order.
 
 #### Guiding Question 2
 
@@ -394,20 +436,34 @@ and in 1984 *Streptococcus fecalis* was renamed *Enterococcus fecalis*
 *Observations*
 
 - What is your response to the question above?
-  - Diplococcus pneumoniae responds to these antibiotics almost the same
-    way as Streptococcus hemolyticus and Streptococcus viridans. In
+  - Diplococcus pneumoniae responds to these antibiotics in a similar
+    way to Streptococcus hemolyticus and Streptococcus viridans. In
     Visual 5, those three are the only bacteria in the upper left
     corner. They all have very low penicillin MICs and high neomycin
     MICs. The data table shows penicillin MICs of 0.005 or less and
     neomycin MICs of 10 or more for all three. Visual 5 leaves out
-    streptomycin but the data table shows it matches too, at 11 for
-    Diplococcus pneumoniae and 14 and 10 for the two Streptococcus. The
-    data table also shows all three are Gram positive.
+    streptomycin but the data table shows streptomycin is similar too,
+    at 11 for Diplococcus pneumoniae and 14 and 10 for the two
+    Streptococcus. The data table also shows all three are Gram
+    positive.
   - The background says bacteria are grouped into a genus based on
     several features, including their resistance to antibiotics.
-    Diplococcus pneumoniae has the same resistance pattern as these two
-    Streptococcus. This suggests it is closely related to them and fits
-    with it being renamed into the Streptococcus genus.
+    Diplococcus pneumoniae has a similar resistance pattern to these two
+    Streptococcus. The values are not identical. In the data table each
+    of its three MICs is within a factor of 5 of the matching value for
+    both Streptococcus. The biggest gaps are penicillin at 0.005 versus
+    0.001 for Streptococcus hemolyticus and neomycin at 10 versus 40 for
+    Streptococcus viridans. MIC is the lowest concentration of an
+    antibiotic that stops a bacterium from growing. Antibiotics work by
+    attacking parts of the bacterial cell. That means an MIC says
+    something about how the bacterium is built. This dataset shows that
+    for penicillin. The Gram stain sorts bacteria by their type of cell
+    wall and in Visual 1 penicillin works on 6 of the 7 Gram positive
+    bacteria and none of the 9 Gram negative ones. If similar MICs point
+    to similar cell structure, then Diplococcus pneumoniae being close
+    to the two Streptococcus on all three antibiotics suggests it is
+    built like them. This would be a stronger reason for moving it into
+    the Streptococcus genus than the numbers alone.
   - Streptococcus fecalis supports this from the other direction. In
     Visual 5, it is far from the other two Streptococcus. The data table
     shows it has a penicillin MIC of 1 and a neomycin MIC of 0.1. It was
@@ -437,11 +493,26 @@ and in 1984 *Streptococcus fecalis* was renamed *Enterococcus fecalis*
     also shows how far Streptococcus fecalis is from them. Visual 1 also
     contains these values but comparing whole profiles there means
     matching each bacterium’s three points across separate panels.
-    Guiding Question 1 compares the antibiotics across groups of
+    Visual 2 now puts the three V shapes for Diplococcus pneumoniae and
+    the two Streptococcus next to each other. Comparing them with
+    Streptococcus fecalis there still means looking across separate
+    panels. Guiding Question 1 compares the antibiotics across groups of
     bacteria and a visual organized by antibiotic works best for that.
     Guiding Question 2 compares one bacterium’s overall pattern with the
     others and a visual that places similar bacteria next to each other
     works better for that.
+
+**Comments for revision**
+
+- I changed “almost the same way” to “in a similar way” and “matches” to
+  “is similar” in the first bullet. I changed “the same resistance
+  pattern” to “a similar resistance pattern” in the second bullet
+  because the three MICs are close but not identical. I also added why
+  similar MICs matter. An MIC depends on how an antibiotic acts on the
+  bacterial cell. Similar MICs across all three antibiotics then suggest
+  a similar cell structure, which is a better reason for the renaming
+  than the numbers alone. I also added two sentences about Visual 2 to
+  the “why” answer since it now shows these patterns as lines.
 
 # References
 
