@@ -529,11 +529,16 @@ df_normalized %>%
 
 ``` r
 # keep only the last date since the counts are cumulative
+# add the means as columns so q7 can compare each county to them
 df_latest <-
   df_normalized %>%
   filter(
     date == max(date),
     !is.na(population)
+  ) %>%
+  mutate(
+    cases_mean = mean(cases_per100k),
+    deaths_mean = mean(deaths_per100k, na.rm = TRUE)
   )
 
 df_latest %>%
@@ -584,78 +589,71 @@ you found in q6. Note any observations.
 
 ``` r
 ## TASK: Find the top 10 max cases_per100k counties; report populations as well
-# keep each county's highest value and the first date it reached it
+# times_mean is how many times bigger than the q6 mean each county is
 df_top_cases <-
-  df_normalized %>%
-  filter(!is.na(cases_per100k)) %>%
-  group_by(county, state) %>%
-  filter(cases_per100k == max(cases_per100k)) %>%
-  filter(date == min(date)) %>%
-  ungroup() %>%
+  df_latest %>%
   arrange(desc(cases_per100k)) %>%
-  select(date, county, state, population, cases, cases_per100k) %>%
+  mutate(times_mean = cases_per100k / cases_mean) %>%
+  select(county, state, population, cases, cases_per100k, times_mean) %>%
   head(10)
 
 df_top_cases
 ```
 
     ## # A tibble: 10 × 6
-    ##    date       county                   state      population cases cases_per100k
-    ##    <date>     <chr>                    <chr>           <dbl> <dbl>         <dbl>
-    ##  1 2022-05-12 Loving                   Texas             102   196       192157.
-    ##  2 2022-05-11 Chattahoochee            Georgia         10767  7486        69527.
-    ##  3 2022-05-11 Nome Census Area         Alaska           9925  6245        62922.
-    ##  4 2022-05-11 Northwest Arctic Borough Alaska           7734  4837        62542.
-    ##  5 2022-05-13 Crowley                  Colorado         5630  3347        59449.
-    ##  6 2022-05-11 Bethel Census Area       Alaska          18040 10362        57439.
-    ##  7 2022-03-30 Dewey                    South Dak…       5779  3139        54317.
-    ##  8 2022-05-12 Dimmit                   Texas           10663  5760        54019.
-    ##  9 2022-05-12 Jim Hogg                 Texas            5282  2648        50133.
-    ## 10 2022-05-11 Kusilvak Census Area     Alaska           8198  4084        49817.
+    ##    county                   state      population cases cases_per100k times_mean
+    ##    <chr>                    <chr>           <dbl> <dbl>         <dbl>      <dbl>
+    ##  1 Loving                   Texas             102   196       192157.       7.76
+    ##  2 Chattahoochee            Georgia         10767  7486        69527.       2.81
+    ##  3 Nome Census Area         Alaska           9925  6245        62922.       2.54
+    ##  4 Northwest Arctic Borough Alaska           7734  4837        62542.       2.52
+    ##  5 Crowley                  Colorado         5630  3347        59449.       2.40
+    ##  6 Bethel Census Area       Alaska          18040 10362        57439.       2.32
+    ##  7 Dewey                    South Dak…       5779  3139        54317.       2.19
+    ##  8 Dimmit                   Texas           10663  5760        54019.       2.18
+    ##  9 Jim Hogg                 Texas            5282  2648        50133.       2.02
+    ## 10 Kusilvak Census Area     Alaska           8198  4084        49817.       2.01
 
 ``` r
 ## TASK: Find the top 10 deaths_per100k counties; report populations as well
 df_top_deaths <-
-  df_normalized %>%
-  filter(!is.na(deaths_per100k)) %>%
-  group_by(county, state) %>%
-  filter(deaths_per100k == max(deaths_per100k)) %>%
-  filter(date == min(date)) %>%
-  ungroup() %>%
+  df_latest %>%
   arrange(desc(deaths_per100k)) %>%
-  select(date, county, state, population, deaths, deaths_per100k) %>%
+  mutate(times_mean = deaths_per100k / deaths_mean) %>%
+  select(county, state, population, deaths, deaths_per100k, times_mean) %>%
   head(10)
 
 df_top_deaths
 ```
 
     ## # A tibble: 10 × 6
-    ##    date       county            state        population deaths deaths_per100k
-    ##    <date>     <chr>             <chr>             <dbl>  <dbl>          <dbl>
-    ##  1 2022-02-19 McMullen          Texas               662      9          1360.
-    ##  2 2022-04-27 Galax city        Virginia           6638     78          1175.
-    ##  3 2022-03-10 Motley            Texas              1156     13          1125.
-    ##  4 2022-04-20 Hancock           Georgia            8535     90          1054.
-    ##  5 2022-04-19 Emporia city      Virginia           5381     55          1022.
-    ##  6 2022-04-27 Towns             Georgia           11417    116          1016.
-    ##  7 2022-02-14 Jerauld           South Dakota       2029     20           986.
-    ##  8 2022-03-04 Loving            Texas               102      1           980.
-    ##  9 2022-02-03 Robertson         Kentucky           2143     21           980.
-    ## 10 2022-05-05 Martinsville city Virginia          13101    124           946.
+    ##    county            state        population deaths deaths_per100k times_mean
+    ##    <chr>             <chr>             <dbl>  <dbl>          <dbl>      <dbl>
+    ##  1 McMullen          Texas               662      9          1360.       3.62
+    ##  2 Galax city        Virginia           6638     78          1175.       3.13
+    ##  3 Motley            Texas              1156     13          1125.       3.00
+    ##  4 Hancock           Georgia            8535     90          1054.       2.81
+    ##  5 Emporia city      Virginia           5381     55          1022.       2.72
+    ##  6 Towns             Georgia           11417    116          1016.       2.71
+    ##  7 Jerauld           South Dakota       2029     20           986.       2.63
+    ##  8 Loving            Texas               102      1           980.       2.61
+    ##  9 Robertson         Kentucky           2143     21           980.       2.61
+    ## 10 Martinsville city Virginia          13101    124           946.       2.52
 
 **Observations**:
 
-- Loving County, Texas has the highest cases per 100,000 at 192,157.
-  This is about 7.8 times the q6 mean of 24,774. The other nine counties
-  in the cases table are between 49,817 and 69,527, which is about 2 to
-  2.8 times the mean.
+- Loving County, Texas has the highest cases per 100,000 at 192,157. The
+  times_mean column shows this is about 7.8 times the q6 mean of 24,774.
+  The other nine counties in the cases table are between 49,817 and
+  69,527, which is about 2 to 2.8 times the mean.
 - Loving County has 196 cases but a population estimate of only 102
   people. That is more cases than people. This could happen if the
   census estimate is too low or if some people were counted as cases
   more than once. The data here can’t show what caused it. I would not
   treat Loving County’s value as a real rate.
 - The top 10 counties for deaths are between 946 and 1,360 deaths per
-  100,000. These are about 2.5 to 3.6 times the q6 mean of 375.
+  100,000. The times_mean column shows these are about 2.5 to 3.6 times
+  the q6 mean of 375.
 - Every county in both tables has fewer than 20,000 people. The largest
   one is Bethel Census Area, Alaska with 18,040.
 - With so few people, a small number of cases or deaths changes the rate
@@ -664,14 +662,18 @@ df_top_deaths
   counties for cases are in Alaska. Three of the top 10 for deaths are
   Virginia cities (Galax, Emporia and Martinsville).
 - When did these “largest values” occur?
-  - The date column shows the first date each county reached its highest
-    value. All 20 counties reached it between 2022-02-03 (Robertson
-    County, Kentucky) and 2022-05-13 (Crowley County, Colorado). The
-    data ends on 2022-05-13. These dates are all in the last few months
-    of the data.
-  - This fits with the counts being cumulative. They keep adding up over
-    time, which puts each county’s largest value near the end of the
-    data.
+  - On 2022-05-13, the last date in the data. The counts are cumulative
+    and only add up over time, which puts each county’s largest value at
+    the last date. That is why q7 can use `df_latest` from q6 directly.
+
+**Comments for revision**
+
+- I changed q6 to add the q6 means to `df_latest` as columns and changed
+  q7 to sort `df_latest` instead of searching `df_normalized` for each
+  county’s highest value. Since the counts are cumulative, the last date
+  already has every county’s highest value. The top 10 counties and
+  their values did not change. I also added a `times_mean` column so the
+  comparison with the q6 mean is shown in the tables.
 
 ## Self-directed EDA
 
@@ -694,7 +696,85 @@ df_top_deaths
 **DO YOUR OWN ANALYSIS HERE**
 
 In q7 every county in the top 10 had fewer than 20,000 people. I wanted
-to see whether the most extreme rates only show up in small counties.
+to understand why the most extreme death rates come from such small
+counties. I looked at this in three steps.
+
+**Step 1: How do the top 10 compare with all counties?**
+
+``` r
+# dashed line is the q6 mean of 375 deaths per 100,000
+df_latest %>%
+  filter(!is.na(deaths_per100k)) %>%
+  ggplot(aes(deaths_per100k)) +
+  geom_histogram(binwidth = 50) +
+  geom_vline(xintercept = 375, linetype = "dashed") +
+  labs(
+    x = "Deaths per 100,000 on 2022-05-13",
+    y = "Number of counties"
+  )
+```
+
+![](c06-covid19-assignment_files/figure-gfm/q8-deaths-histogram-1.png)<!-- -->
+
+*Observations*
+
+- The histogram has one hill with the tallest bars right around the
+  dashed mean line. Most counties are between about 100 and 700 deaths
+  per 100,000.
+- There is a long thin tail to the right that goes past 1000. The top 10
+  counties from q7 (946 to 1,360) are all in this tail, where the bars
+  are only a few counties tall.
+- The short bar centered at 0 on the far left includes the counties that
+  had no deaths at all.
+
+**Step 2: How did the top 10 counties get so high?**
+
+I compared the top 10 counties for deaths with the 10 largest counties
+to see how deaths per 100,000 grew over time.
+
+``` r
+# the 10 counties with the most people that have a death count
+df_largest <-
+  df_latest %>%
+  filter(!is.na(deaths_per100k)) %>%
+  arrange(desc(population)) %>%
+  head(10) %>%
+  select(county, state)
+
+df_normalized %>%
+  semi_join(df_top_deaths, by = c("county", "state")) %>%
+  mutate(group = "Top 10 deaths per 100,000") %>%
+  bind_rows(
+    df_normalized %>%
+      semi_join(df_largest, by = c("county", "state")) %>%
+      mutate(group = "10 largest counties")
+  ) %>%
+  ggplot(aes(date, deaths_per100k, group = county)) +
+  geom_line() +
+  facet_wrap(~group) +
+  labs(
+    x = "Date",
+    y = "Deaths per 100,000"
+  )
+```
+
+![](c06-covid19-assignment_files/figure-gfm/q8-deaths-over-time-1.png)<!-- -->
+
+*Observations*
+
+- In the left panel, the lines for the 10 largest counties rise smoothly
+  and all end below the 500 gridline.
+- In the right panel, the lines for the top 10 counties go up in big
+  steps instead of smoothly. In a small county each death moves the rate
+  a lot. Even a few deaths in one week shows up as a jump.
+- One line in the right panel stays at 0 until early 2022 and then jumps
+  straight up to about 980. That is Loving County, where the q7 table
+  shows 1 death out of 102 people. A single death took it from 0 to the
+  8th highest rate in the country.
+
+**Step 3 (punchline): Is the spread of death rates tied to county
+size?**
+
 This plot shows deaths per 100,000 against population for the 3133
 counties with a death count on 2022-05-13 (n_deaths in q6). The red
 points are the top 10 counties for deaths from q7.
@@ -742,6 +822,14 @@ df_latest %>%
   age of each county from the census (table B01002). That would show
   whether the red counties are older than the counties near the dashed
   line.
+
+**Comments for revision**
+
+- I added two explorations before the punchline plot. Step 1 looks at
+  the distribution of death rates across all counties and Step 2
+  compares how deaths per 100,000 grew over time in the top 10 counties
+  and the 10 largest counties. Both led to the punchline plot in Step 3,
+  which shows that the most extreme rates come from small counties.
 
 ### Aside: Some visualization tricks
 

@@ -581,10 +581,6 @@ df_interval_bootstrap
   - I chose Sato, the most common name in my random sample. The q8 table
     shows a 95% interval from 0.0597 to 0.224. The highest plausible
     prevalence of Sato in Helvig is about 0.224, or about 22% of people.
-  - This interval is likely too narrow. The bootstrap resamples people
-    one at a time. I sampled whole houses and people in the same house
-    often share a last name. Resampling houses instead of people would
-    give a better sense of the uncertainty.
 - Note that we used the *random* sample with the bootstrap procedure in
   this task. Could we use the bootstrap to make a confidence interval
   using the sequential sample (`df_sample_seq`) that would be
@@ -597,6 +593,15 @@ df_interval_bootstrap
     all of Helvig. For example, it would center on Sorensen being 0.129
     of people, even though Sorensen is not in the top rows of the q6
     table for the random sample.
+
+**Comments for revision**
+
+- I removed the bullet that said the interval is likely too narrow. It
+  described the bootstrap as resampling “people one at a time,” which
+  was wrong. `bootstraps()` draws each resample with replacement at the
+  same size as the original sample (67 people here). If a resample had
+  only one person, the prevalence would always be 0 or 1, which does not
+  match the interval from 0.0597 to 0.224.
 
 ### **q9** Discover possible measurements
 
